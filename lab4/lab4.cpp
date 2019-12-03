@@ -113,19 +113,16 @@ void GlobalPoisson(const char* filepath, const char* filepath2, double wG, const
         ++iter;
         S_prev = S_curr;
 
-
-
-
         // wzor 9 - STEP1
-        for(int i = 1; i <= nx; ++i){
-            for(int j = 1; j <= ny; ++j){
+        for(int i = 1; i <= nx-1; ++i){
+            for(int j = 1; j <= ny-1; ++j){
                 Vn[i][j] = 0.25 * (Vs[i+1][j] + Vs[i-1][j] +
                                 Vs[i][j+1] + Vs[i][j-1] + 
                                 delta * delta * CalcRo(i, j) / eps);
             }
         }        
         // wzor 10, 11 - STEP2
-        for(int j = 1; j <= ny-1; ++j){
+        for(int j = 1; j <= ny; ++j){
             Vn[0][j] = Vn[1][j];
             Vn[nx][j] = Vn[nx-1][j];
         }
@@ -140,8 +137,8 @@ void GlobalPoisson(const char* filepath, const char* filepath2, double wG, const
 
         S_curr = CalcSum(Vn, p);
 
-        value = std::fabs((S_curr - S_prev) / (S_prev));
         file << iter << " " << S_curr << "\n";
+        value = std::fabs((S_curr - S_prev) / (S_prev));
 
 
     }while(value > TOL);
@@ -157,7 +154,6 @@ void LocalPoisson(const char* filepath, double wL, const std::array<std::array<d
         for(auto& el : arr)
             el = 0.0;
 
-    
 
     // initial V values
     for(int i = 0; i <= nx; ++i){
@@ -195,11 +191,12 @@ void LocalPoisson(const char* filepath, double wL, const std::array<std::array<d
         file << iter << " " << S_curr << "\n";
 
 
-    }while(value >= TOL);
+    }while(value > TOL);
     
 
     file.close();
 }
+
 
 
 double CalcSum(const std::array<std::array<double, ny+1>, nx+1>& V, const std::array<std::array<double, ny+1>, nx+1>& p){
@@ -209,7 +206,9 @@ double CalcSum(const std::array<std::array<double, ny+1>, nx+1>& V, const std::a
             double first = std::pow(( V[i+1][j] - V[i][j] ) / delta, 2.0);
             double second = std::pow(( V[i][j+1] - V[i][j] ) / delta, 2.0);;
             sum += delta*delta * (0.5 * first + 0.5 * second - p[i][j] * V[i][j]);
-            }                                                                       
+
+            //sum += (delta * delta) * (0.5 * std::pow((V[i + 1][j] - V[i][j]) / delta, 2) + 0.5 * std::pow((V[i][j + 1] - V[i][j]) / delta, 2) - p[i][j] * V[i][j]); 
+        }                                                                       
     }
     return sum;
 }
@@ -224,7 +223,7 @@ void PrintError(const std::array<std::array<double, ny+1>, nx+1>& V, const char*
         for(int j = 1; j < ny; ++j){
             double up = V[i+1][j] - 2.0 * V[i][j] + V[i-1][j] + V[i][j+1] - 2.0 * V[i][j] + V[i][j-1];
             double down = delta * delta;
-
+        
             file << i * delta << " " << j * delta << " " << V[i][j] << " " << up / down + CalcRo(i, j) / eps << "\n";
         }
     }
