@@ -14,9 +14,9 @@ double CalcRo1(double x, double y, const double xmax, const double ymax);
 double CalcRo2(double x, double y, const double xmax, const double ymax);
 double CalcRo(double x, double y, const double xmax, const double ymax);
 
-std::size_t ij_to_l(std::size_t i, std::size_t j, std::size_t nx);
-std::size_t l_to_j(std::size_t l, std::size_t nx);
-std::size_t l_to_i(std::size_t l, std::size_t j, std::size_t nx);
+constexpr std::size_t ij_to_l(std::size_t i, std::size_t j, std::size_t nx);
+constexpr std::size_t l_to_j(std::size_t l, std::size_t nx);
+constexpr std::size_t l_to_i(std::size_t l, std::size_t j, std::size_t nx);
 
 void CSR_Algorithm(const char* filepath1, const char* filepath2, 
                    std::vector<double>& a, std::vector<int>& ia,
@@ -37,20 +37,25 @@ int main(){
     std::vector<double> b;
     std::vector<double> V;
 
-    double eps1 = 1.0;
-    double eps2 = 1.0;
-
-    double V1 =  10.0;
-    double V2 = -10.0;
-    double V3 =  10.0;
-    double V4 = -10.0;
-
+    double eps1, eps2, V1, V2, V3, V4;
+    std::size_t nx, ny;
+    
     int nz_num = 0;
 
 
+
+
+    eps1 = 1.0;
+    eps2 = 1.0;
+
+    V1 =  10.0;
+    V2 = -10.0;
+    V3 =  10.0;
+    V4 = -10.0;
+
+    nx = 4;
+    ny = 4; 
     
-    int nx = 4;
-    int ny = 4;
 
     CSR_Algorithm("a1.txt","b1.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
     SolvePoisson("v1.txt", nx, ny, nz_num, ia, ja, a, b, V);
@@ -70,7 +75,7 @@ int main(){
     nx = 200;
     ny = 200;
 
-    CSR_Algorithm("a4.txt","b4.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
+    CSR_Algorithm("a4.txt","b4.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
     SolvePoisson("v4.txt", nx, ny, nz_num, ia, ja, a, b, V);
 
     V1 = 0;
@@ -106,7 +111,7 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
                    std::vector<double>& a, std::vector<int>& ia,
                    std::vector<int>& ja, std::vector<double>& b,
                    std::size_t nx, std::size_t ny, int& nz_num,
-                   double V1, double V2, double V3, double V4, 
+                   double v1, double v2, double v3, double v4, 
                    double eps_1, double eps_2, bool isRoZero)
 {
     int k = -1;
@@ -130,36 +135,32 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
 
     for(std::size_t l = 0; l < N+nx+1; ++l){
         std::size_t i = l_to_i(l, l_to_j(l, nx), nx);
-        if(i <= nx / 2.0){
-            eps_vec.push_back(eps_1);
-        }
-        else if(i > nx / 2.0){
-            eps_vec.push_back(eps_2);
-        }
+
+        eps_vec.push_back((i <= nx / 2 ? eps_1 : eps_2));
     }
 
     for(std::size_t l = 0; l < N; ++l){
         std::size_t j_idx = l_to_j(l, nx);
         std::size_t i_idx = l_to_i(l, j_idx, nx);
-        int brzeg = 0;
+        std::size_t brzeg = 0;
         double vb = 0.0;
 
         if(i_idx == 0){
             brzeg = 1;
-            vb = V1;
+            vb = v1;
         }
         else if(i_idx == nx){
             brzeg = 1;
-            vb = V3;
+            vb = v3;
         }
 
         if(j_idx == ny){
             brzeg = 1;
-            vb = V2;
+            vb = v2;
         }
         else if(j_idx == 0){
             brzeg = 1;
-            vb = V4;
+            vb = v4;
         }
 
         b[l] = (isRoZero) ? 0.0: -1.0 * CalcRo(delta * i_idx, delta * j_idx, delta * nx, delta * ny);
@@ -167,36 +168,41 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
         if(brzeg == 1){
             b[l] = vb;
         }
-        ia[l] = -1;
 
+        ia[l] = -1;
         // lewa skrajna przekatna
         if(l-nx-1 >= 0 && brzeg == 0){
             k++;
-            if(ia[l] < 0)
+            if(ia[l] < 0){
                 ia[l] = k;
+            }
+
             a[k] = eps_vec[l] / (delta*delta);
             ja[k] = l - nx - 1;
         }
         // poddiagonala
-        if(l-1 >= 0 && brzeg == 0){
+        if(l - 1 >= 0 && brzeg == 0){
             k++;
-            if(ia[l] < 0)
+            if(ia[l] < 0){
                 ia[l] = k;
+            }
+
             a[k] = eps_vec[l] / (delta*delta);
             ja[k] = l - 1;
         }
         // diagonala
         k++;
-        if(ia[l] < 0)
+        if(ia[l] < 0){
             ia[l] = k;
+        }
 
-        if(brzeg == 0)
-            a[k] = -(2.0 * eps_vec[l] * eps_vec[l+1] + eps_vec[l+nx+1]) /(delta * delta);
-        else
+        if(brzeg == 0){
+            a[k] = -(2.0 * eps_vec[l] * eps_vec[l+1] + eps_vec[l+nx+1]) / (delta * delta);
+        }
+        else{
             a[k] = 1;
-
+        }
         ja[k] = l;
-
         // naddiagonala
         if(l < N && brzeg == 0){
             k++;
@@ -263,15 +269,15 @@ double CalcRo(double x, double y, const double xmax, const double ymax){
     return CalcRo1(x, y, xmax, ymax) + CalcRo2(x, y, xmax, ymax);
 }
 
-std::size_t ij_to_l(std::size_t i, std::size_t j, std::size_t nx){
+constexpr std::size_t ij_to_l(std::size_t i, std::size_t j, std::size_t nx){
     return i + j * (nx+1);
 }
 
-std::size_t l_to_j(std::size_t l, std::size_t nx){
+constexpr std::size_t l_to_j(std::size_t l, std::size_t nx){
     return l / (nx+1);
 }
 
-std::size_t l_to_i(std::size_t l, std::size_t j, std::size_t nx){
+constexpr std::size_t l_to_i(std::size_t l, std::size_t j, std::size_t nx){
     return l - j * (nx+1);
 }
 
