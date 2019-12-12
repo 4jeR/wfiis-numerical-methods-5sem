@@ -6,10 +6,6 @@
 
 
 constexpr double delta = 0.1;
-
-
-
-
 double CalcRo1(double x, double y, const double xmax, const double ymax);
 double CalcRo2(double x, double y, const double xmax, const double ymax);
 double CalcRo(double x, double y, const double xmax, const double ymax);
@@ -18,9 +14,9 @@ constexpr std::size_t ij_to_l(std::size_t i, std::size_t j, std::size_t nx);
 constexpr std::size_t l_to_j(std::size_t l, std::size_t nx);
 constexpr std::size_t l_to_i(std::size_t l, std::size_t j, std::size_t nx);
 
-void CSR_Algorithm(const char* filepath1, const char* filepath2, 
+void CSR_Algorithm(const char* fp_a, const char* fp_b, const char* fp_v, 
                    std::vector<double>& a, std::vector<int>& ia,
-                   std::vector<int>& ja, std::vector<double>& b,
+                   std::vector<int>& ja, std::vector<double>& b, std::vector<double>& v,
                    std::size_t nx, std::size_t ny, int& nz_num,
                    double V1, double V2, double V3, double V4, 
                    double eps_1, double eps_2, bool isRoZero);
@@ -43,40 +39,31 @@ int main(){
     int nz_num = 0;
 
 
-
-
     eps1 = 1.0;
     eps2 = 1.0;
-
     V1 =  10.0;
     V2 = -10.0;
     V3 =  10.0;
     V4 = -10.0;
-
     nx = 4;
     ny = 4; 
+    CSR_Algorithm("a1.txt","b1.txt", "v1.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
     
-
-    CSR_Algorithm("a1.txt","b1.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
-    SolvePoisson("v1.txt", nx, ny, nz_num, ia, ja, a, b, V);
 
     nx = 50;
     ny = 50;
-
-    CSR_Algorithm("a2.txt","b2.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
-    SolvePoisson("v2.txt", nx, ny, nz_num, ia, ja, a, b, V);
+    CSR_Algorithm("a2.txt","b2.txt", "v2.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
+    
 
     nx = 100;
     ny = 100;
-
-    CSR_Algorithm("a3.txt","b3.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
-    SolvePoisson("v3.txt", nx, ny, nz_num, ia, ja, a, b, V);
+    CSR_Algorithm("a3.txt","b3.txt", "v3.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
+    
 
     nx = 200;
     ny = 200;
-
-    CSR_Algorithm("a4.txt","b4.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
-    SolvePoisson("v4.txt", nx, ny, nz_num, ia, ja, a, b, V);
+    CSR_Algorithm("a4.txt","b4.txt", "v4.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, true);
+    
 
     V1 = 0;
     V2 = 0;
@@ -84,32 +71,24 @@ int main(){
     V4 = 0;
     nx = 100;
     ny = 100;
-
-
-    CSR_Algorithm("a5.txt","b5.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
-    SolvePoisson("v5.txt", nx, ny, nz_num, ia, ja, a, b, V);
+    CSR_Algorithm("a5.txt","b5.txt", "v5.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
+    
 
     eps1 = 1.0;
     eps2 = 2.0;
-
-    CSR_Algorithm("a6.txt","b6.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
-    SolvePoisson("v6.txt", nx, ny, nz_num, ia, ja, a, b, V);
+    CSR_Algorithm("a6.txt","b6.txt", "v6.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
+    
 
     eps1 = 1.0;
     eps2 = 10.0;
-
-    CSR_Algorithm("a7.txt","b7.txt", a, ia, ja, b, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
-    SolvePoisson("v7.txt", nx, ny, nz_num, ia, ja, a, b, V);
-
-
-
-
+    CSR_Algorithm("a7.txt","b7.txt", "v6.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
+    
     return 0;
 }
 
-void CSR_Algorithm(const char* filepath1, const char* filepath2, 
+void CSR_Algorithm(const char* fp_a, const char* fp_b,const char* fp_v, 
                    std::vector<double>& a, std::vector<int>& ia,
-                   std::vector<int>& ja, std::vector<double>& b,
+                   std::vector<int>& ja, std::vector<double>& b, std::vector<double>& v,
                    std::size_t nx, std::size_t ny, int& nz_num,
                    double v1, double v2, double v3, double v4, 
                    double eps_1, double eps_2, bool isRoZero)
@@ -117,8 +96,8 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
     int k = -1;
     const std::size_t N = (nx + 1) * (ny + 1);
 
-    b.clear();
-    b.resize(N);
+    a.clear();
+    a.resize(5 * N);
 
     ia.clear();
     ia.resize(N+1);
@@ -126,9 +105,8 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
     ja.clear();
     ja.resize(5 * N);
 
-    a.clear();
-    a.resize(5 * N);
-
+    b.clear();
+    b.resize(N);
 
 
     std::vector<double> eps_vec;
@@ -223,7 +201,7 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
     ia[N] = nz_num;
 
     std::ofstream file;
-    file.open(filepath1);
+    file.open(fp_a);
     for(std::size_t l = 0; l < N; ++l){
         std::size_t j_idx = l_to_j(l, nx);
         std::size_t i_idx = l_to_i(l, j_idx, nx);
@@ -232,7 +210,7 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
     }
     file.close();
 
-    file.open(filepath2);
+    file.open(fp_b);
     for(std::size_t l = 0; l < N; ++l){
         std::size_t j_idx = l_to_j(l, nx);
         std::size_t i_idx = l_to_i(l, j_idx, nx);
@@ -241,6 +219,8 @@ void CSR_Algorithm(const char* filepath1, const char* filepath2,
     }
     file.close();
 
+    // SOLVE
+    SolvePoisson(fp_v, nx, ny, nz_num, ia, ja, a, b, v);
 }
 
 
@@ -302,6 +282,7 @@ void SolvePoisson(const char* filepath, std::size_t nx, std::size_t ny, int nz_n
     for(std::size_t l = 0; l < N; l++){
         std::size_t j_idx = l_to_j(l, nx);
         std::size_t i_idx = l_to_i(l, j_idx, nx);
+        
         file << delta * i_idx << " " << delta * j_idx << " " << V[l] << "\n";
     }
     file.close();
