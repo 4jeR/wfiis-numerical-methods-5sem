@@ -496,9 +496,9 @@ double **dmatrix ( int nrl, int nrh, int ncl, int nch )
 
   if ( ! m ) 
   {
-    // fprintf ( stderr, "\n" );
-    // fprintf ( stderr, "DMATRIX - Fatal error!\n" );
-    // fprintf ( stderr, "  Failure allocating pointers to rows.\n");
+    fprintf ( stderr, "\n" );
+    fprintf ( stderr, "DMATRIX - Fatal error!\n" );
+    fprintf ( stderr, "  Failure allocating pointers to rows.\n");
     exit ( 1 );
   }
   m = m + 1;
@@ -510,9 +510,9 @@ double **dmatrix ( int nrl, int nrh, int ncl, int nch )
 
   if ( ! m[nrl] ) 
   {
-    // fprintf ( stderr, "\n" );
-    // fprintf ( stderr, "DMATRIX - Fatal error!\n" );
-    // fprintf ( stderr, "  Failure allocating rows.\n");
+    fprintf ( stderr, "\n" );
+    fprintf ( stderr, "DMATRIX - Fatal error!\n" );
+    fprintf ( stderr, "  Failure allocating rows.\n");
     exit ( 1 );
   }
   m[nrl] = m[nrl] + 1;
@@ -680,10 +680,10 @@ void ilu_cr ( int n, int nz_num, int ia[], int ja[], double a[], int ua[],
 
     if ( l[j] == 0.0 ) 
     {
-      // fprintf ( stderr, "\n" );
-      // fprintf ( stderr, "ILU_CR - Fatal error!\n" );
-      // fprintf ( stderr, "  Zero pivot on step I = \n", i );
-      // fprintf ( stderr, "  L[%d] = 0.0\n", j );
+      fprintf ( stderr, "\n" );
+      fprintf ( stderr, "ILU_CR - Fatal error!\n" );
+      fprintf ( stderr, "  Zero pivot on step I = \n", i );
+      fprintf ( stderr, "  L[%d] = 0.0\n", j );
       exit ( 1 );
     }
 
@@ -914,11 +914,11 @@ void mgmres_st ( int n, int nz_num, int ia[], int ja[], double a[],
 
   if ( n < mr )
   {
-    // fprintf ( stderr, "\n" );
-    // fprintf ( stderr, "MGMRES_ST - Fatal error!\n" );
-    // fprintf ( stderr, "  N < MR.\n" );
-    // fprintf ( stderr, "  N = %d\n", n );
-    // fprintf ( stderr, "  MR = %d\n", mr );
+    fprintf ( stderr, "\n" );
+    fprintf ( stderr, "MGMRES_ST - Fatal error!\n" );
+    fprintf ( stderr, "  N < MR.\n" );
+    fprintf ( stderr, "  N = %d\n", n );
+    fprintf ( stderr, "  MR = %d\n", mr );
     exit ( 1 );
   }
 

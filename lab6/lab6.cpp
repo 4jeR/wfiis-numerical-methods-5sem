@@ -33,6 +33,7 @@ int main(){
     std::vector<double> b;
     std::vector<double> V;
 
+
     double eps1, eps2, V1, V2, V3, V4;
     std::size_t nx, ny;
     
@@ -81,7 +82,7 @@ int main(){
 
     eps1 = 1.0;
     eps2 = 10.0;
-    CSR_Algorithm("a7.txt","b7.txt", "v6.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
+    CSR_Algorithm("a7.txt","b7.txt", "v7.txt", a, ia, ja, b, V, nx, ny, nz_num, V1, V2, V3, V4, eps1, eps2, false);
     
     return 0;
 }
@@ -113,8 +114,12 @@ void CSR_Algorithm(const char* fp_a, const char* fp_b,const char* fp_v,
 
     for(std::size_t l = 0; l < N+nx+1; ++l){
         std::size_t i = l_to_i(l, l_to_j(l, nx), nx);
-
-        eps_vec.push_back((i <= nx / 2 ? eps_1 : eps_2));
+        if(i <= nx / 2){
+            eps_vec.push_back(eps_1);
+        }
+        else if (i > nx / 2){
+            eps_vec.push_back(eps_2);
+        }
     }
 
     for(std::size_t l = 0; l < N; ++l){
@@ -141,7 +146,7 @@ void CSR_Algorithm(const char* fp_a, const char* fp_b,const char* fp_v,
             vb = v4;
         }
 
-        b[l] = (isRoZero) ? 0.0: -1.0 * CalcRo(delta * i_idx, delta * j_idx, delta * nx, delta * ny);
+        b[l] = (isRoZero == true) ? 0.0 : -1.0 * CalcRo(delta * i_idx, delta * j_idx, delta * nx, delta * ny);
 
         if(brzeg == 1){
             b[l] = vb;
@@ -175,7 +180,7 @@ void CSR_Algorithm(const char* fp_a, const char* fp_b,const char* fp_v,
         }
 
         if(brzeg == 0){
-            a[k] = -(2.0 * eps_vec[l] * eps_vec[l+1] + eps_vec[l+nx+1]) / (delta * delta);
+            a[k] = -(2.0 * eps_vec[l] + eps_vec[l+1] + eps_vec[l+nx+1]) / (delta * delta);
         }
         else{
             a[k] = 1;
@@ -238,7 +243,7 @@ double CalcRo1(double x, double y, const double xmax, const double ymax){
 double CalcRo2(double x, double y, const double xmax, const double ymax){
     double d = 0.1 * xmax;
 
-    double first = (x - 0.25 * xmax)*(x - 0.25 * xmax) / (d*d); 
+    double first = (x - 0.75 * xmax)*(x - 0.75 * xmax) / (d*d); 
     double second = (y - 0.5 * ymax)*(y - 0.5 * ymax) / (d*d);
 
     return -1.0 * std::exp(- first - second);
@@ -274,8 +279,10 @@ void SolvePoisson(const char* filepath, std::size_t nx, std::size_t ny, int nz_n
     int mr = 500;
     double tol_abs = 1e-8;
     double tol_rel = 1e-8;  
+    
 
     pmgmres_ilu_cr(N, nz_num, ia.data(), ja.data(), a.data(), V.data(), b.data(), itr_max, mr, tol_abs, tol_rel);
+
     
     std::ofstream file;
     file.open(filepath);
