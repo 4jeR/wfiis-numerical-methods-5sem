@@ -26,19 +26,18 @@ double CalcFi(int i, int j, const matrix& fi, const matrix& zeta);
 double CalcZeta(int i, int j, const matrix& fi, const matrix& zeta, double omega);
 double CalcQ_out(double Qin, const y_nodes& y);
 
-bool OnEdge(int i, int j);
 bool Inside(int i, int j);
 
 int main(){
     x_nodes xnodes;
     y_nodes ynodes;
-    for(int i = 0; i <= n_x; ++i){
+    
+    for(int i = 0; i <= n_x; ++i)
         xnodes[i] = delta * i;
-    }
-    for(int j = 0; j <= n_y; ++j){
+    
+    for(int j = 0; j <= n_y; ++j)
         ynodes[j] = delta * j;
-    }
-
+    
     Relaxation(-1000.0, "q-1000.txt", xnodes, ynodes);
     Relaxation(-4000.0, "q-4000.txt", xnodes, ynodes);
     Relaxation( 4000.0, "q+4000.txt", xnodes, ynodes);
@@ -50,22 +49,18 @@ void Relaxation(double Q_in, const char* filepath, const x_nodes& x, const y_nod
     double omega = 1.0;
     matrix fi,zeta;
     
-    for(auto& arr : fi){
-        for(auto& el : arr){
+    for(auto& arr : fi)
+        for(auto& el : arr)
             el = 0.0;
-        }
-    }
-
-    for(auto& arr : zeta){
-        for(auto& el : arr){
+        
+    for(auto& arr : zeta)
+        for(auto& el : arr)
             el = 0.0;
-        }
-    }
-
+        
     SetBoundaryConditionsFi(Q_in, fi, x, y);
 
     for(int it = 1; it <= IT_MAX; ++it){
-        omega = (it >= 2000) ? 1.0 : 0.0; // omega = 1.0 powoduje -nan w errorze!
+        omega = (it >= 2000) ? 1.0 : 0.0;
         
         for(int i = 1; i <= n_x-1; ++i){
             for(int j = 1; j <= n_y-1; ++j){
@@ -82,23 +77,10 @@ void Relaxation(double Q_in, const char* filepath, const x_nodes& x, const y_nod
     WriteResultsToFile(filepath, fi, zeta, x, y);
 }
 
-bool OnEdge(int i, int j){    
-    bool A = (i == 0   && (j_1 <= j && j <= n_y));
-    bool B = (j == n_y && (0   <= i && i <= n_x));   
-    bool C = (i == n_x && (0   <= j && j <= n_y));
-    bool D = (j == 0   && (i_1 <= i && i <= n_x));
-    bool E = (i == i_1 && (0   <= j && j <= j_1));
-    bool F = (j == j_1 && (0   <= i && i <= i_1));
-
-    return A || B || C || D || E || F;
-}
-
 bool Inside(int i, int j){
-    return (
-        (0 < i   && i < n_x)&&
-        (0 < j   && j < n_y)&&
-        !( (0 <= i && i <= i_1)&&
-           (0 <= j && j <= j_1))
+    return ( (0 < i   && i < n_x) && (0 < j   && j < n_y) 
+        && 
+          !( (0 <= i && i <= i_1) && (0 <= j && j <= j_1) ) 
     );
 }
 
@@ -184,6 +166,7 @@ double CalcZeta(int i, int j, const matrix& fi, const matrix& zeta, double omega
     return first - second;
 }
 
+[[maybe_unused]]
 void ErrorControl(int iteration, const matrix& fi, const matrix& zeta){
     double sum = 0.0;
     double j2 = j_1 + 2;
@@ -197,15 +180,14 @@ void ErrorControl(int iteration, const matrix& fi, const matrix& zeta){
                 - delta*delta*zeta[i][j2]);
     }
 
-
     std::cout << iteration << " -> " << sum << "\n";
 }
 
 void WriteResultsToFile(const char* filepath, const matrix& fi, const matrix& zeta, const x_nodes& x, const y_nodes& y){
     std::ofstream file;
-    file.open(filepath);
-
     double u_xy, v_xy;
+
+    file.open(filepath);
 
     for(int i = 0; i <= n_x; ++i){
         for(int j = 0; j <= n_y; ++j){
