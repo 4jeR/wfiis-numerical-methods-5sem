@@ -1,5 +1,5 @@
 CC=g++
-CXXFLAGS= -g -Wall -pedantic
+CXXFLAGS= -Ofast -Wall -pedantic
 OBJS = lab7.o
 OUT = exe
 

@@ -10,7 +10,7 @@ constexpr int n_x = 200;
 constexpr int n_y = 90;
 constexpr int i_1 = 50;
 constexpr int j_1 = 55;
-constexpr int IT_MAX = 2 * 10e4;
+constexpr int IT_MAX = 20000;
 
 using matrix = std::array<std::array<double, n_y+1>, n_x+1>;
 using y_nodes = std::array<double, n_y+1>;
@@ -50,6 +50,18 @@ void Relaxation(double Q_in, const char* filepath, const x_nodes& x, const y_nod
     double omega = 1.0;
     matrix fi,zeta;
     
+    for(auto& arr : fi){
+        for(auto& el : arr){
+            el = 0.0;
+        }
+    }
+
+    for(auto& arr : zeta){
+        for(auto& el : arr){
+            el = 0.0;
+        }
+    }
+
     SetBoundaryConditionsFi(Q_in, fi, x, y);
 
     for(int it = 1; it <= IT_MAX; ++it){
@@ -57,20 +69,20 @@ void Relaxation(double Q_in, const char* filepath, const x_nodes& x, const y_nod
         
         for(int i = 1; i <= n_x-1; ++i){
             for(int j = 1; j <= n_y-1; ++j){
-                if(!OnEdge(i, j) /*&& Inside(i, j)*/){
+                if(Inside(i, j)){
                     fi[i][j] = CalcFi(i, j, fi, zeta);
                     zeta[i][j] = CalcZeta(i, j, fi, zeta, omega);
                 }
             }
         }
-        SetBoundaryConditionsZeta(Q_in,fi, zeta, x, y);
-        ErrorControl(it, fi, zeta);
+        SetBoundaryConditionsZeta(Q_in, fi, zeta, x, y);
+        // ErrorControl(it, fi, zeta);
     }
 
     WriteResultsToFile(filepath, fi, zeta, x, y);
 }
 
-bool OnEdge(int i, int j){
+bool OnEdge(int i, int j){    
     bool A = (i == 0   && (j_1 <= j && j <= n_y));
     bool B = (j == n_y && (0   <= i && i <= n_x));   
     bool C = (i == n_x && (0   <= j && j <= n_y));
@@ -85,15 +97,15 @@ bool Inside(int i, int j){
     return (
         (0 < i   && i < n_x)&&
         (0 < j   && j < n_y)&&
-        !( (0 < i && i < i_1)&&
-           (0 < j && j < j_1))
+        !( (0 <= i && i <= i_1)&&
+           (0 <= j && j <= j_1))
     );
 }
 
 void SetBoundaryConditionsFi(double Qin, matrix& fi, const x_nodes& x, const y_nodes& y){
     // A
     for(int j = j_1; j <= n_y; ++j){
-        fi[0][j] = Qin * (std::pow(y[j], 3.0)/3.0 - std::pow(y[j],2.0) * (y[j_1 + y[n_y]]) / 2.0 + y[j]*y[j_1]*y[n_y]) / (2.0 * u);
+        fi[0][j] = Qin * (std::pow(y[j], 3.0)/3.0 - std::pow(y[j],2.0) * (y[j_1] + y[n_y]) / 2.0 + y[j]*y[j_1]*y[n_y]) / (2.0 * u);
     }
     // C
     double Q_out = CalcQ_out(Qin, y);
@@ -161,11 +173,15 @@ double CalcFi(int i, int j, const matrix& fi, const matrix& zeta){
 }
 
 double CalcZeta(int i, int j, const matrix& fi, const matrix& zeta, double omega){
-    double first = 0.25 * (zeta[i+1][j] + zeta[i-1][j] + zeta[i][j+1] + zeta[i][j-1]);
+    double first = 0.25 * (   zeta[i+1][j] 
+                            + zeta[i-1][j] 
+                            + zeta[i][j+1] 
+                            + zeta[i][j-1]
+    );
     double second = omega * p * (  (fi[i][j+1] - fi[i][j-1]) * (zeta[i+1][j] - zeta[i-1][j])
                                  - (fi[i+1][j] - fi[i-1][j]) * (zeta[i][j+1] - zeta[i][j-1])
-                                );
-    return first - second / (16.0 * u);
+                                ) / (16.0 * u);
+    return first - second;
 }
 
 void ErrorControl(int iteration, const matrix& fi, const matrix& zeta){
@@ -191,9 +207,9 @@ void WriteResultsToFile(const char* filepath, const matrix& fi, const matrix& ze
 
     double u_xy, v_xy;
 
-    for(int i = 1; i <= n_x-1; ++i){
-        for(int j = 1; j <= n_y-1; ++j){
-            if(!OnEdge(i, j) /*&& Inside(i, j)*/){
+    for(int i = 0; i <= n_x; ++i){
+        for(int j = 0; j <= n_y; ++j){
+            if(Inside(i, j)){
                 u_xy =  (fi[i][j+1] - fi[i][j-1])/(2.0 * delta);
                 v_xy = -(fi[i+1][j] - fi[i-1][j])/(2.0 * delta);  
             }
@@ -203,6 +219,7 @@ void WriteResultsToFile(const char* filepath, const matrix& fi, const matrix& ze
             }
             file << x[i] << " " << y[j] << " " << fi[i][j] << " " << zeta[i][j] << " " << u_xy << " " << v_xy << "\n";
         }
+        file << "\n";
     }
 
     file.close();
@@ -210,5 +227,6 @@ void WriteResultsToFile(const char* filepath, const matrix& fi, const matrix& ze
 
 double CalcQ_out(double Qin, const y_nodes& y){
     double yny3 = std::pow(y[n_y], 3.0);
-    return Qin * (yny3 - std::pow(y[j_1], 3.0) - 3.0 * y[j_1] * std::pow(y[n_y], 2.0) + 3.0 * std::pow(y[j_1], 2.0) * y[n_y] ) / (yny3);
+    return Qin * (yny3 - std::pow(y[j_1], 3.0) - 3.0 * y[j_1] * std::pow(y[n_y], 2.0) + 3.0 * std::pow(y[j_1], 2.0) * y[n_y] ) / yny3;
 }
+
